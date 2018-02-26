@@ -1,8 +1,5 @@
-# JBSquad
-JBSquad doing it big on the SQL Project ft. Phandroid
-
-/* FINAL SQL CODE */
-
+/* Created the tables, their variables, primary keys, unique indices, and
+inserted data from our unstructured dataset 'Smartphones_Data' */
 
 CREATE TABLE Features
 (
@@ -15,7 +12,6 @@ GO
 CREATE UNIQUE INDEX UI_Features_FID
 ON Features (FID)
 GO
-
 
 INSERT INTO Features
 SELECT DISTINCT Specification
@@ -35,6 +31,7 @@ GO
 ALTER TABLE Phones
 ADD CONSTRAINT PK_Phones_PID PRIMARY KEY (PID)
 
+
 INSERT INTO Phones
 SELECT DISTINCT Smartphones_Data.Phone_Name
 				,Smartphones_Data.Phone_URL
@@ -51,6 +48,7 @@ FROM
 		Features
 	ON Smartphones_Data.Feature = Features.Feature
 
+
 SELECT DISTINCT Group_2_MindRiteSQLTite..Smartphones_Data.Phone_Name
 				,Smartphones_Data.Phone_URL
 				,Smartphones_Data.Phone_Forum_URL
@@ -60,6 +58,7 @@ FROM
 	INNER JOIN
 		Phones
 	ON Smartphones_Data.Phone_Name = Phones.Phone_Name
+
 
 CREATE TABLE Represent
 (
@@ -74,7 +73,7 @@ INSERT INTO Represent (PID, FID, Feature_Value)
 SELECT DISTINCT Phones.PID
 				,Features.FID
 				,Smartphones_Data.Feature_Value
-FROM 
+FROM
 		Phones
 	INNER JOIN
 		Smartphones_Data
@@ -84,20 +83,18 @@ FROM
 	ON Smartphones_Data.Feature = Features.Feature
 
 
-/* 5/1 added code */ 
-
 CREATE TABLE Users
 (
          Username VARCHAR(500) NOT NULL
          ,User_Date_Joined VARCHAR(500) NOT NULL
 )
 GO
- 
+
 INSERT INTO Users
 SELECT DISTINCT Username
                 ,User_Date_Joined
 FROM Group_2_MindRiteSQLTite..Smartphones_Data
- 
+
 INSERT INTO Users
 SELECT DISTINCT First_Replier
 				,'1900-01-01'
@@ -107,8 +104,8 @@ WHERE First_Replier NOT IN
         SELECT Username
 		 FROM Users
   )
- 
- 
+
+
 CREATE TABLE Threads
 (
 	Thread_URL VARCHAR(500) NOT NULL
@@ -127,13 +124,11 @@ SELECT DISTINCT Smartphones_Data.Thread_URL
 				,Smartphones_Data.Username
 				, Phones.PID
 				,Smartphones_Data.Date_of_Post
-FROM 
+FROM
 		Group_2_MindRiteSQLTite..Smartphones_Data
 	INNER JOIN
 		Phones
 	ON Smartphones_Data.Phone_Name = Phones.Phone_Name
-		
-
 
 
 CREATE TABLE ReplyTo
@@ -150,7 +145,7 @@ GO
 INSERT INTO ReplyTo (Username, Thread_URL)
 SELECT DISTINCT Users.Username
 				,Thread.Thread_URL
-FROM 
+FROM
 		Users
 	INNER JOIN
 		Smartphones_Data
@@ -159,14 +154,8 @@ FROM
 		Thread
 	ON Smartphones_Data.Thread_Content = Thread.Thread_Content
 
+/* Created the Foreign Key relationships */
 
-
-
-
-
-
-
-/* Foreign Key */
 ALTER TABLE ReplyTo
 ADD CONSTRAINT FK_ReplyTo_Thread_Thread_URL FOREIGN KEY (Thread_URL)
 REFERENCES Thread (Thread_URL)
@@ -177,8 +166,6 @@ ADD CONSTRAINT FK_ReplyTo_Users_Username FOREIGN KEY (Username)
 REFERENCES Users (Username)
 GO
 
-
-/* Foreign Key */
 ALTER TABLE Thread
 ADD CONSTRAINT FK_Thread_User_Username FOREIGN KEY (Username)
 REFERENCES Users (Username)
@@ -189,8 +176,6 @@ ADD CONSTRAINT FK_Users_Thread_Username FOREIGN KEY (Username)
 REFERENCES Thread (Username)
 GO
 
-
-/* Foreign Key */
 ALTER TABLE Represent
 ADD CONSTRAINT FK_Represent_Features_FID FOREIGN KEY (FID)
 REFERENCES Features (FID)
@@ -199,3 +184,61 @@ GO
 ALTER TABLE Represent
 ADD CONSTRAINT FK_Represent_Phones_PID FOREIGN KEY (PID)
 REFERENCES Phones (PID)
+GO
+
+/* These are the business questions were created and answered */
+
+/* What phones are the Top 10 most talked about phones in the 2013
+holiday season? */
+
+SELECT Top 10 COUNT(Disctinct Thread_URL) As 'Discussion Count'
+		,Phone_Name
+FROM
+		Phones
+	Inner Join
+		Threads
+	ON Phones.PID = Threads.PID
+WHERE Convert(Date, Date_of_Post) between '2013-11-29' and '2013-12-31'
+GROUP BY Phone_Name
+ORDER BY Count(Distinct Thread_URL) DESC
+GO
+
+/* What are the 3 most common months in which new Users joined
+Phandroid.com? */
+
+SELECT Top 3 User_Date_Joined
+			,Count(Distinct Username) as 'User Count'
+FROM Users
+WHERE User_Date_Joined between '2011-01-01' and '2011-12-31'
+GROUP BY User_Date_Joined
+ORDER BY 2 DESC
+GO
+
+SELECT Top 3 User_Date_Joined
+			,Count(Distinct Username) as 'User Count'
+FROM Users
+WHERE User_Date_Joined between '2012-01-01' and '2012-12-31'
+GROUP BY User_Date_Joined
+ORDER BY 2 DESC
+GO
+
+SELECT Top 3 User_Date_Joined
+			,Count(Distinct Username) as 'User Count'
+FROM Users
+WHERE User_Date_Joined between '2013-01-01' and '2013-12-31'
+GROUP BY User_Date_Joined
+ORDER BY 2 DESC
+GO
+
+/* Identify top 25 usernames who reply to the most threads */
+
+SELECT Top 25 Users.Username
+		,Count(Date_of_Reply) as 'Reply Count'
+FROM
+		Users
+	Inner Join
+		ReplyTo
+	ON Users.Username = ReplyTo.Username
+GROUP BY Users.Username
+ORDER BY 2 DESC
+GO
